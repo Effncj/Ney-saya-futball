@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Neymar vs CR7 - Super Sayajin Futebol</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #0b6623;
+      color: white;
+      font-family: Arial, sans-serif;
+      touch-action: none;
+    }
+    canvas {
+      background: #0b6623;
+      display: block;
+      margin: 0 auto;
+      border: 4px solid white;
+      max-width: 100%;
+    }
+    #info {
+      text-align: center;
+      font-size: 16px;
+      margin-top: 5px;
+    }
+    .controls {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      gap: 10px;
+    }
+    .btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid white;
+      border-radius: 10px;
+      padding: 10px;
+      color: white;
+      font-size: 16px;
+      flex: 1;
+      text-align: center;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="info"></div>
+
+<div class="controls">
+  <div class="btn" id="up1">↑ Neymar</div>
+  <div class="btn" id="down1">↓ Neymar</div>
+  <div class="btn" id="super1">⚡ Neymar</div>
+  <div class="btn" id="up2">↑ CR7</div>
+  <div class="btn" id="down2">↓ CR7</div>
+  <div class="btn" id="super2">⚡ CR7</div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.6;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  class Player {
+    constructor(name, color, x, superColor) {
+      this.name = name;
+      this.color = color;
+      this.superColor = superColor;
+      this.x = x;
+      this.y = canvas.height / 2;
+      this.width = 30;
+      this.height = 30;
+      this.speed = 5;
+      this.superMode = false;
+      this.gols = 0;
+    }
+    draw() {
+      ctx.fillStyle = this.superMode ? this.superColor : this.color;
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    move(direction) {
+      this.y += direction * this.speed;
+      this.y = Math.max(0, Math.min(canvas.height - this.height, this.y));
+    }
+  }
+
+  class Ball {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = canvas.width / 2;
+      this.y = canvas.height / 2;
+      this.vx = Math.random() < 0.5 ? 4 : -4;
+      this.vy = 2;
+      this.radius = 10;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.y <= 0 || this.y >= canvas.height) this.vy *= -1;
+    }
+  }
+
+  let neymar = new Player('Neymar', 'blue', 50, 'aqua');
+  let cr7 = new Player('CR7', 'green', canvas.width - 80, 'lime');
+  let ball = new Ball();
+
+  let bosses = ['Messi', 'Pelé', 'Maradona', 'Goku', 'Vegeta Ultra Ego'];
+  let currentBossIndex = 0;
+  let boss = bosses[currentBossIndex];
+  let timeLeft = 300;
+  let interval = setInterval(() => {
+    if (--timeLeft <= 0) endGame("Empate!");
+  }, 1000);
+
+  function endGame(winner) {
+    clearInterval(interval);
+    alert(`${winner} venceu!`);
+    location.reload();
+  }
+
+  function checkGoal() {
+    if (ball.x < 0) {
+      cr7.gols++;
+      ball.reset();
+    } else if (ball.x > canvas.width) {
+      neymar.gols++;
+      ball.reset();
+    }
+    if (neymar.gols >= 3) nextBoss('Neymar');
+    if (cr7.gols >= 3) nextBoss('CR7');
+  }
+
+  function nextBoss(winner) {
+    alert(`${winner} venceu a partida contra ${boss}!`);
+    currentBossIndex++;
+    if (currentBossIndex >= bosses.length) {
+      alert(`${winner} venceu todos! É o campeão supremo!`);
+      clearInterval(interval);
+      location.reload();
+    } else {
+      boss = bosses[currentBossIndex];
+      neymar.gols = 0;
+      cr7.gols = 0;
+      ball.reset();
+    }
+  }
+
+  function update() {
+    ball.update();
+
+    if (ball.x - ball.radius < neymar.x + neymar.width &&
+        ball.y > neymar.y && ball.y < neymar.y + neymar.height) {
+      ball.vx *= -1;
+    }
+    if (ball.x + ball.radius > cr7.x &&
+        ball.y > cr7.y && ball.y < cr7.y + cr7.height) {
+      ball.vx *= -1;
+    }
+    checkGoal();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'white';
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+
+    neymar.draw();
+    cr7.draw();
+    ball.draw();
+
+    document.getElementById('info').innerText = `
+      Neymar: ${neymar.gols} | CR7: ${cr7.gols} | Boss: ${boss} | Tempo: ${timeLeft}s
+    `;
+  }
+
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // TOQUE
+  document.getElementById('up1').addEventListener('touchstart', () => neymar.move(-1));
+  document.getElementById('down1').addEventListener('touchstart', () => neymar.move(1));
+  document.getElementById('super1').addEventListener('touchstart', () => neymar.superMode = true);
+  document.getElementById('super1').addEventListener('touchend', () => neymar.superMode = false);
+
+  document.getElementById('up2').addEventListener('touchstart', () => cr7.move(-1));
+  document.getElementById('down2').addEventListener('touchstart', () => cr7.move(1));
+  document.getElementById('super2').addEventListener('touchstart', () => cr7.superMode = true);
+  document.getElementById('super2').addEventListener('touchend', () => cr7.superMode = false);
+</script>
+
+</body>
+</html>
